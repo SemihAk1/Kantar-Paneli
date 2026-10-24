@@ -435,6 +435,17 @@ tr.htot td{background:linear-gradient(165deg,#FBF6EA,#F5EEDC);border-top:2px sol
 #jobsT td.ctr,#jobsT th.ctr{text-align:center}
 
 .wrap:has(#v-ov.on),.wrap:has(#v-sc.on),.wrap:has(#v-scada.on),.wrap:has(#v-lub.on){max-width:1860px}
+
+#v-hist .tblwrap{max-height:calc(100vh - 190px);overflow:auto}
+#histT thead{position:sticky;top:0;z-index:5}
+#histT thead th{position:static}
+#histT tr.htot td{border-top:0!important;border-bottom:2px solid var(--ink)!important;padding:8px 12px!important}
+#histT tr.htot .hti{padding:5px 12px}#histT tr.htot .hti b{font-size:17px}
+
+table.rt.wo th:nth-child(n+2){text-align:center}
+table.rt.wo td:nth-child(2),table.rt.wo td:nth-child(3),table.rt.wo td:nth-child(4){text-align:center;vertical-align:middle}
+
+#histT td.ctr{text-align:center;vertical-align:middle}
 </style>
 <style id="pgateCss">
 html.pg-on body>*:not(#pgate){display:none!important}
@@ -802,7 +813,7 @@ var GR={
  {k:'w',lab:'c_work',multi:1,v:function(r){return r.w},d:function(v){return T(v)},sv:function(r){return r.w.map(function(w){return T(w)}).join(', ')}},
  {k:'rs',lab:'c_reason',v:function(r){return r.rs||'—'},sv:function(r){return r.rs||''}},
  {k:'h',lab:'c_hours',num:1,ctr:1,v:function(r){return nk(r.h)},d:function(v){return v==='—'?v:fh(+v)},sv:function(r){return r.h},rv:function(r){return r.h}},
- {k:'o',lab:'c_lub',v:function(r){return lubSpec(r)||'—'},sv:function(r){return lubSpec(r)}},
+ {k:'o',lab:'c_lub',ctr:1,v:function(r){return lubSpec(r)||'—'},sv:function(r){return lubSpec(r)}},
  {k:'ot',lab:'c_otype',v:function(r){return lubType(r)||'—'},sv:function(r){return lubType(r)}},
  {k:'q',lab:'c_qty',ctr:1,v:function(r){return (r.att&&r.att.length?'📎 ':'')+(qtyShort(r)||'—')},sv:function(r){return qtyShort(r)}},
  {k:'b',lab:'c_by',multi:1,v:function(r){return (r.b||'').split(', ').filter(Boolean)},sv:function(r){return r.b||''}},
@@ -904,7 +915,10 @@ var ADMINS={SEMIHAKSOY:1};   // bu kişiler tüm kayıtları düzeltebilir / ipt
 function mine(r){var me=nrm(PU());return !!me&&(!r.u||nrm(r.u)===me||!!ADMINS[me])}
 function isGr(r){return (r.w||[]).some(function(w){return String(w).toUpperCase()==='GREASE'})}
 function isOil(r){return (r.w||[]).some(function(w){return String(w).toUpperCase()!=='GREASE'})}
-function lubSpec(r){if(!isGr(r))return '';if(r.g)return r.g;var e=eqOf(String(r.t||'').split(', ')[0]);if(e&&e.kd&&/seviye|level/i.test(e.kd.GREASE||''))return T('lvl_chk');return ''}
+function lubSpec(r){var a=[],W=(r.w||[]).map(function(w){return String(w).toUpperCase()});
+  if(W.indexOf('OIL CHECK')>=0)a.push(T('lvl_oil'));if(W.indexOf('OIL ANALYSIS')>=0)a.push(T('OIL ANALYSIS'));if(W.indexOf('OIL CHANGE')>=0)a.push(T('OIL CHANGE'));
+  if(isGr(r)){if(r.g)a.push(r.g);else{var e=eqOf(String(r.t||'').split(', ')[0]);a.push(e&&e.kd&&/seviye|level/i.test(e.kd.GREASE||'')?T('lvl_chk'):T('GREASE'))}}
+  return a.join(' · ')}
 function lubType(r){var a=[];if(isOil(r)&&r.o)a.push(r.o);if(isGr(r)&&r.qgt)a.push(r.qgt);return a.join(' · ')}
 function qtyShort(r){var a=[];if(r.qg!=null)a.push(fq(r.qg)+' gram');if(r.qa!=null)a.push(fq(r.qa)+' L');if(r.qc!=null)a.push(fq(r.qc)+' L');if(r.res)a.push(T('res_'+r.res));return a.join(' · ')}
 var hUser=false;
@@ -917,10 +931,10 @@ function histTotals(l){var g=0,ng=0,la=0,lc=0,gt={},ot={};
     var ol=(r.qa!=null?+r.qa:0)+(r.qc!=null?+r.qc:0);if(r.qa!=null)la+=+r.qa;if(r.qc!=null)lc+=+r.qc;if(ol){var o=r.o||'—';ot[o]=(ot[o]||0)+ol}});
   function br(m,u){return Object.keys(m).sort(function(a,b){return m[b]-m[a]}).map(function(k){return '<span class="tb"><b>'+esc(fnum(m[k]))+' '+u+'</b> '+esc(k)+'</span>'}).join('')}
   var f=hUser?$('hFrom').value:'',t=hUser?$('hTo').value:'',rng=(f||t)?(f?fd(f+' 00:00').slice(0,10):'…')+' – '+(t?fd(t+' 00:00').slice(0,10):'…'):T('h_all');
-  return '<tfoot><tr class="htot"><td colspan="13"><div class="htw"><div class="htl"><span class="up">'+esc(T('h_tot'))+'</span><small>'+esc(rng)+(hArea?' · '+esc(areaLbl(hArea)):'')+' · '+esc(T('n_recs',{n:l.length}))+'</small></div>'+
+  return '<tr class="htot"><td colspan="13"><div class="htw"><div class="htl"><span class="up">'+esc(T('h_tot'))+'</span><small>'+esc(rng)+(hArea?' · '+esc(areaLbl(hArea)):'')+' · '+esc(T('n_recs',{n:l.length}))+'</small></div>'+
     '<div class="htc"><div class="hti"><span>'+esc(T('h_gr'))+'</span><b>'+esc(fnum(g,0))+' g</b><small>'+esc(fnum(g/1000,2))+' kg · '+ng+' '+esc(T('h_rec'))+'</small></div>'+
     '<div class="hti"><span>'+esc(T('h_oil'))+'</span><b>'+esc(fnum(la+lc))+' L</b><small>'+esc(T('q_add'))+' '+esc(fnum(la))+' L · '+esc(T('q_chg'))+' '+esc(fnum(lc))+' L</small></div></div>'+
-    ((Object.keys(gt).length||Object.keys(ot).length)?'<div class="htb">'+br(gt,'g')+br(ot,'L')+'</div>':'')+'</div></td></tr></tfoot>'}
+    ((Object.keys(gt).length||Object.keys(ot).length)?'<div class="htb">'+br(gt,'g')+br(ot,'L')+'</div>':'')+'</div></td></tr>'}
 // same equipment + same job within 12 h (half the interval if it is shorter than 24 h) = duplicate
 function dupFind(eq,ws,at,rep){var t0=parseIso(at).getTime(),EQ=String(eq).toUpperCase(),pc={};pendGet().forEach(function(p){if(p.cancel)pc[p.cancel]=1});
   function win(k){var j=(D.jobs||[]).filter(function(x){return String(x.t).toUpperCase()===EQ&&x.k===k})[0];return (j&&j.p>0&&j.p<24?j.p/2:12)*36e5}
@@ -939,13 +953,13 @@ function renderHist(){
   var l=gridList('hist');
   $('hCnt').textContent=T('n_recs',{n:l.length})+(l.length!==D.hist.length?' / '+D.hist.length:'');
   $('hChips').innerHTML=gridChips('hist');
-  var h=gridHead('hist').replace('</tr>','<th class="delc"></th></tr>');
+  var h='<thead>'+gridHead('hist').replace('</tr>','<th class="delc"></th></tr>')+'@@HTOT@@</thead><tbody>';
   $('hArea').innerHTML=[['','r_all']].concat(areaList().map(function(a){return [a,areaLbl(a)]})).map(function(x){return '<button type="button" data-harea="'+esc(x[0])+'" class="'+(hArea===x[0]?'on':'')+'">'+esc(x[0]?x[1]:T(x[1]))+'</button>'}).join('');
   hRange();$('hRx').hidden=!hUser;
   var pend=pendList(),pc={};pend.forEach(function(p){if(p.cancel)pc[p.cancel]=1});l=l.filter(function(r){return !pc[r.id]});
   h+=pend.map(function(p){return '<tr><td class="num" style="white-space:nowrap">'+esc(fd(p.at))+'</td><td><div class="tagt">'+esc(p.t)+'</div></td><td>'+(p.cancel?'<span class="chip" style="color:var(--red)">'+esc(T('c_pend'))+'</span>':(p.w||[]).map(function(w){return '<span class="chip g">'+esc(T(w.replace('_',' ')))+'</span>'}).join(''))+'</td><td class="sm">'+esc(p.rs||'')+'</td><td></td><td></td><td></td><td class="sm">'+esc(p.by||'')+'</td><td></td><td colspan="4"><span class="pill st-PEND" title="'+esc(T('pend_hint'))+'"><i></i>'+esc(T('pending'))+'</span></td></tr>'}).join('');
-  h+=l.slice(0,histShown).map(function(r){return '<tr class="click" data-tag="'+esc(r.t.split(', ')[0])+'"><td class="num" style="white-space:nowrap">'+esc(fd(r.at))+'</td><td><div class="tagt">'+esc(r.t)+'</div><div class="sm">'+esc(r.d)+'</div></td><td>'+r.w.map(function(w){return '<span class="chip g">'+esc(T(w))+'</span>'}).join('')+'</td><td class="sm">'+esc(r.rs)+'</td><td class="ctr num">'+fh(r.h)+'</td><td class="sm">'+esc(lubSpec(r)||'—')+'</td><td class="sm">'+esc(lubType(r)||'—')+'</td><td class="sm num ctr" style="white-space:nowrap">'+(esc(qtyShort(r))||'—')+(r.att&&r.att.length?'<div class="atts">'+attHtml(r)+'</div>':'')+'</td><td class="sm">'+esc(r.b)+'</td><td class="sm">'+esc(r.n||'')+'</td><td class="sm num ctr" style="white-space:nowrap">'+esc(fd(r.e).slice(0,16))+'</td><td class="sm ctr"><b style="color:var(--ink2)">'+esc(r.u||'—')+'</b></td><td class="delc">'+(mine(r)?'<span class="rbtns"><button class="edx" data-edit="'+esc(r.id)+'" title="'+esc(T('e_btn'))+'" aria-label="'+esc(T('e_btn'))+'">✎</button><button class="delx" data-cancel="'+esc(r.id)+'" title="'+esc(T('c_btn'))+'" aria-label="'+esc(T('c_btn'))+'">✕</button></span>':'<span class="lockd" title="'+esc(T('e_only'))+'">🔒</span>')+'</td></tr>'}).join('')||(pend.length?'':'<tr><td colspan="13" class="empty">'+esc(T('none'))+'</td></tr>');
-  $('histT').innerHTML=h+histTotals(l);
+  h+=l.slice(0,histShown).map(function(r){return '<tr class="click" data-tag="'+esc(r.t.split(', ')[0])+'"><td class="num" style="white-space:nowrap">'+esc(fd(r.at))+'</td><td><div class="tagt">'+esc(r.t)+'</div><div class="sm">'+esc(r.d)+'</div></td><td>'+r.w.map(function(w){return '<span class="chip g">'+esc(T(w))+'</span>'}).join('')+'</td><td class="sm">'+esc(r.rs)+'</td><td class="ctr num">'+fh(r.h)+'</td><td class="sm ctr">'+esc(lubSpec(r)||'—')+'</td><td class="sm">'+esc(lubType(r)||'—')+'</td><td class="sm num ctr" style="white-space:nowrap">'+(esc(qtyShort(r))||'—')+(r.att&&r.att.length?'<div class="atts">'+attHtml(r)+'</div>':'')+'</td><td class="sm">'+esc(r.b)+'</td><td class="sm">'+esc(r.n||'')+'</td><td class="sm num ctr" style="white-space:nowrap">'+esc(fd(r.e).slice(0,16))+'</td><td class="sm ctr"><b style="color:var(--ink2)">'+esc(r.u||'—')+'</b></td><td class="delc">'+(mine(r)?'<span class="rbtns"><button class="edx" data-edit="'+esc(r.id)+'" title="'+esc(T('e_btn'))+'" aria-label="'+esc(T('e_btn'))+'">✎</button><button class="delx" data-cancel="'+esc(r.id)+'" title="'+esc(T('c_btn'))+'" aria-label="'+esc(T('c_btn'))+'">✕</button></span>':'<span class="lockd" title="'+esc(T('e_only'))+'">🔒</span>')+'</td></tr>'}).join('')||(pend.length?'':'<tr><td colspan="13" class="empty">'+esc(T('none'))+'</td></tr>');
+  $('histT').innerHTML=(h+'</tbody>').replace('@@HTOT@@',histTotals(l));
   $('histMore').innerHTML=l.length>histShown?'<button class="btn" data-more="hist">'+esc(T('show_more',{n:l.length-histShown}))+'</button>':'';
   $('rejT').innerHTML='<tr><th>'+esc(T('c_entered'))+'</th><th>'+esc(T('c_problem'))+'</th><th>'+esc(T('c_eq'))+'</th><th>'+esc(T('c_work'))+'</th><th>'+esc(T('c_by'))+'</th><th>'+esc(T('c_done'))+'</th><th>'+esc(T('c_why'))+'</th><th>'+esc(T('c_when'))+'</th><th>'+esc(T('c_xuser'))+'</th></tr>'+
     (D.rej.length?D.rej.map(function(r){var why=r.p==='CANCELLED'?(r.r?esc(r.r):'<span class="faintx">'+esc(T('empty'))+'</span>'):'<span class="faintx">—</span>';
